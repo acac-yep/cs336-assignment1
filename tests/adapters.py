@@ -14,6 +14,7 @@ from cs336_basics.linear import Linear
 from cs336_basics.embedding import Embedding
 from cs336_basics.RMSNorm import RMSNorm
 from cs336_basics.activation import silu
+from cs336_basics.feedforward import SwiGLU
 
 def run_linear(
     d_in: int,
@@ -87,14 +88,12 @@ def run_swiglu(
     Returns:
         Float[Tensor, "... d_model"]: Output embeddings of the same shape as the input embeddings.
     """
-    # Example:
-    # If your state dict keys match, you can use `load_state_dict()`
-    # swiglu.load_state_dict(weights)
-    # You can also manually assign the weights
-    # swiglu.w1.weight.data = w1_weight
-    # swiglu.w2.weight.data = w2_weight
-    # swiglu.w3.weight.data = w3_weight
-    raise NotImplementedError
+    swiglu = SwiGLU(d_model=d_model, d_ff=d_ff)
+    with torch.no_grad():
+        swiglu.w1.weight.copy_(w1_weight)
+        swiglu.w2.weight.copy_(w2_weight)
+        swiglu.w3.weight.copy_(w3_weight)
+    return swiglu(in_features)
 
 
 def run_scaled_dot_product_attention(
