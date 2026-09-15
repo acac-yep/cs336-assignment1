@@ -14,6 +14,7 @@ from cs336_basics.linear import Linear
 from cs336_basics.embedding import Embedding
 from cs336_basics.RMSNorm import RMSNorm
 from cs336_basics.activation import silu
+from cs336_basics.attention import scaled_dot_product_attention
 from cs336_basics.feedforward import SwiGLU
 
 def run_linear(
@@ -114,7 +115,7 @@ def run_scaled_dot_product_attention(
     Returns:
         Float[Tensor, " ... queries d_v"]: Output of SDPA
     """
-    raise NotImplementedError
+    return scaled_dot_product_attention(Q=Q, K=K, V=V, mask=mask)
 
 
 def run_multihead_self_attention(
