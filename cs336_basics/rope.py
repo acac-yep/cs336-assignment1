@@ -8,8 +8,8 @@ def rope(
     x: torch.Tensor,
     token_positions: torch.Tensor,
 ) -> torch.Tensor:
-    """Apply rotary positional embeddings to the final dimension of ``x``."""
-    # RoPE groups the feature dimension into 2D pairs and rotates each pair.
+    """在 x 的最后一维上应用旋转位置编码。"""
+    # RoPE 将特征维度两两分组，并分别进行二维旋转。
     if d_k % 2 != 0:
         raise ValueError("RoPE requires an even embedding dimension")
     if x.shape[-1] != d_k:
@@ -22,10 +22,10 @@ def rope(
         raise ValueError("token_positions must be in [0, max_seq_len)")
 
     original_dtype = x.dtype
-    # (..., seq, d_k) -> (..., seq, d_k // 2, 2).
+    # 形状从 (..., seq, d_k) 变为 (..., seq, d_k // 2, 2)。
     x_float = x.float().reshape(*x.shape[:-1], d_k // 2, 2)
 
-    # Each pair uses a different frequency; positions determine the angle.
+    # 每组使用不同频率，token 位置决定旋转角度。
     frequencies = theta ** (
         -torch.arange(0, d_k, 2, device=x.device, dtype=torch.float32) / d_k
     )
@@ -35,6 +35,6 @@ def rope(
 
     even = x_float[..., 0]
     odd = x_float[..., 1]
-    # Apply the standard 2D rotation to every pair.
+    # 对每组二维向量应用标准二维旋转。
     rotated = torch.stack((even * cos - odd * sin, even * sin + odd * cos), dim=-1)
     return rotated.reshape_as(x).to(original_dtype)

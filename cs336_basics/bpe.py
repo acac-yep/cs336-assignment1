@@ -5,7 +5,7 @@ PAT = r"""'(?:[sdmt]|ll|ve|re)| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s
 
 
 def pretokenize(text: str) -> Counter[str]:
-    """Split text into GPT-2-style pre-token strings and count them."""
+    """按 GPT-2 风格切分文本，并统计每种预分词的出现次数。"""
     counts = Counter()
 
     for match in regex.finditer(PAT, text):
@@ -16,7 +16,7 @@ def pretokenize(text: str) -> Counter[str]:
 
 
 def token_to_bytes(token):
-    """Represent a pre-token as a sequence of one-byte tokens."""
+    """将预分词表示为由单字节 token 组成的序列。"""
     token_bytes = token.encode("utf-8")
     bytes_list = []
     for b in token_bytes:
@@ -26,7 +26,7 @@ def token_to_bytes(token):
 
 
 def count_pairs(token_counts, token_sequences):
-    """Count adjacent byte-token pairs, weighted by token frequency."""
+    """按预分词频率统计相邻字节 token 对的出现次数。"""
     pair_counts = Counter()
     for token, frequency in token_counts.items():
         tokens = token_sequences[token]
@@ -37,7 +37,7 @@ def count_pairs(token_counts, token_sequences):
 
 
 def merge_pair(tokens, best_pair):
-    """Merge every non-overlapping occurrence of one pair from left to right."""
+    """从左到右合并指定 token 对的所有不重叠出现位置。"""
     i = 0
     new_token = []
     while i < len(tokens):
@@ -58,7 +58,7 @@ def train_bpe(
     with open(input_path, encoding="utf-8") as f:
         text = f.read()
 
-    # Remove special tokens before pre-tokenization so they are never merged.
+    # 先移除特殊 token，避免它们参与预分词和合并。
     parts = [text]
 
     for special_token in special_tokens:
@@ -82,7 +82,7 @@ def train_bpe(
     merges = []
     pair_to_tokens = defaultdict(set)
 
-    # Track which pre-tokens contain each pair for efficient updates.
+    # 记录每个 token 对出现在哪些预分词中，便于增量更新。
     for token, tokens in token_sequences.items():
         for pair in zip(tokens, tokens[1:]):
             pair_to_tokens[pair].add(token)
@@ -90,7 +90,7 @@ def train_bpe(
     num_merges = vocab_size - 256 - len(special_tokens)
     pair_counts = count_pairs(token_counts, token_sequences)
 
-    # Repeatedly choose the most frequent pair; tuple order breaks ties.
+    # 反复选择最高频 token 对；频率相同时按 tuple 顺序打破平局。
     for _ in range(num_merges):
         best_pair = max(
             pair_counts,
@@ -105,7 +105,7 @@ def train_bpe(
             tokens = token_sequences[token]
             frequency = token_counts[token]
 
-            # Remove this token's old pair contributions.
+            # 移除当前预分词对旧 token 对计数的贡献。
             for pair in zip(tokens, tokens[1:]):
                 pair_counts[pair] -= frequency
                 pair_to_tokens[pair].discard(token)
@@ -116,7 +116,7 @@ def train_bpe(
                 if not pair_to_tokens[pair]:
                     del pair_to_tokens[pair]
 
-            # Merge the selected pair and add the new pair contributions.
+            # 合并选中的 token 对，并加入新的 token 对计数。
             new_tokens = merge_pair(tokens, best_pair)
             token_sequences[token] = new_tokens
 
@@ -124,7 +124,7 @@ def train_bpe(
                 pair_counts[pair] += frequency
                 pair_to_tokens[pair].add(token)
 
-    # The first 256 vocabulary entries are the raw byte tokens.
+    # 词表最开始的 256 项对应原始字节 token。
     vocab = {}
     for i in range(256):
         vocab[i] = bytes([i])

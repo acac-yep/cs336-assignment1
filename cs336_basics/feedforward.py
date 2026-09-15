@@ -13,7 +13,7 @@ class SwiGLU(nn.Module):
         self.w3 = Linear(d_model, d_ff)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        # SiLU gate controls the value branch elementwise.
+        # SiLU 门控逐元素控制 value 分支。
         gate = silu(self.w1(x))
         value = self.w3(x)
         return self.w2(gate * value)

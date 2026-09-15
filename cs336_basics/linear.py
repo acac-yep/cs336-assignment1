@@ -7,10 +7,10 @@ class Linear(nn.Module):
         super().__init__()
         self.in_features = in_features
         self.out_features = out_features
-        # Store weights as (out_features, in_features), like nn.Linear.
+        # 权重形状为 (out_features, in_features)，与 nn.Linear 一致。
         self.weight = nn.Parameter(torch.empty((out_features, in_features), device=device, dtype=dtype))
         with torch.no_grad():
-            # Xavier-style truncated normal initialization.
+            # 使用类似 Xavier 的截断正态分布初始化。
             sigma = math.sqrt(2 / (in_features + out_features))
             nn.init.trunc_normal_(
                 self.weight,
@@ -21,5 +21,5 @@ class Linear(nn.Module):
             )
 
     def forward(self, x):
-        # Apply the linear map while supporting arbitrary leading dimensions.
+        # 支持任意前导维度的线性变换。
         return x @ self.weight.T
