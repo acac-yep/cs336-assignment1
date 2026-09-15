@@ -5,6 +5,7 @@ PAT = r"""'(?:[sdmt]|ll|ve|re)| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s
 
 
 def pretokenize(text: str) -> Counter[str]:
+    """Split text into GPT-2-style pre-token strings and count them."""
     counts = Counter()
 
     for match in regex.finditer(PAT, text):
@@ -13,7 +14,9 @@ def pretokenize(text: str) -> Counter[str]:
 
     return counts
 
+
 def token_to_bytes(token):
+    """Represent a pre-token as a sequence of one-byte tokens."""
     token_bytes = token.encode("utf-8")
     bytes_list = []
     for b in token_bytes:
@@ -21,16 +24,20 @@ def token_to_bytes(token):
         bytes_list.append(byte_token)
     return bytes_list
 
+
 def count_pairs(token_counts, token_sequences):
+    """Count adjacent byte-token pairs, weighted by token frequency."""
     pair_counts = Counter()
     for token, frequency in token_counts.items():
         tokens = token_sequences[token]
-        token_zip = zip(tokens,tokens[1:])
+        token_zip = zip(tokens, tokens[1:])
         for pair in token_zip:
             pair_counts[pair] += frequency
     return pair_counts
 
+
 def merge_pair(tokens, best_pair):
+    """Merge every non-overlapping occurrence of one pair from left to right."""
     i = 0
     new_token = []
     while i < len(tokens):
@@ -48,10 +55,10 @@ def train_bpe(
     vocab_size: int,
     special_tokens: list[str],
 ):
-
-    with open(input_path, "r", encoding="utf-8") as f:
+    with open(input_path, encoding="utf-8") as f:
         text = f.read()
 
+    # Remove special tokens before pre-tokenization so they are never merged.
     parts = [text]
 
     for special_token in special_tokens:
@@ -61,6 +68,7 @@ def train_bpe(
             new_parts.extend(part.split(special_token))
 
         parts = new_parts
+
     token_counts = Counter()
 
     for part in parts:
@@ -74,14 +82,15 @@ def train_bpe(
     merges = []
     pair_to_tokens = defaultdict(set)
 
+    # Track which pre-tokens contain each pair for efficient updates.
     for token, tokens in token_sequences.items():
         for pair in zip(tokens, tokens[1:]):
             pair_to_tokens[pair].add(token)
 
     num_merges = vocab_size - 256 - len(special_tokens)
-    
     pair_counts = count_pairs(token_counts, token_sequences)
 
+    # Repeatedly choose the most frequent pair; tuple order breaks ties.
     for _ in range(num_merges):
         best_pair = max(
             pair_counts,
@@ -96,7 +105,7 @@ def train_bpe(
             tokens = token_sequences[token]
             frequency = token_counts[token]
 
-            # 删除旧 pair
+            # Remove this token's old pair contributions.
             for pair in zip(tokens, tokens[1:]):
                 pair_counts[pair] -= frequency
                 pair_to_tokens[pair].discard(token)
@@ -107,15 +116,15 @@ def train_bpe(
                 if not pair_to_tokens[pair]:
                     del pair_to_tokens[pair]
 
-            # merge
+            # Merge the selected pair and add the new pair contributions.
             new_tokens = merge_pair(tokens, best_pair)
             token_sequences[token] = new_tokens
 
-            # 加入新 pair
             for pair in zip(new_tokens, new_tokens[1:]):
                 pair_counts[pair] += frequency
                 pair_to_tokens[pair].add(token)
 
+    # The first 256 vocabulary entries are the raw byte tokens.
     vocab = {}
     for i in range(256):
         vocab[i] = bytes([i])
