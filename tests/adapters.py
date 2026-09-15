@@ -16,6 +16,7 @@ from cs336_basics.RMSNorm import RMSNorm
 from cs336_basics.activation import silu
 from cs336_basics.attention import scaled_dot_product_attention
 from cs336_basics.feedforward import SwiGLU
+from cs336_basics.rope import rope
 
 def run_linear(
     d_in: int,
@@ -211,7 +212,13 @@ def run_rope(
     Returns:
         Float[Tensor, " ... sequence_length d_k"]: Tensor with RoPEd input.
     """
-    raise NotImplementedError
+    return rope(
+        d_k=d_k,
+        theta=theta,
+        max_seq_len=max_seq_len,
+        x=in_query_or_key,
+        token_positions=token_positions,
+    )
 
 
 def run_transformer_block(
