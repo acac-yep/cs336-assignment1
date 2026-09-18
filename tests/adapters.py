@@ -21,6 +21,7 @@ from cs336_basics.attention import (
 )
 from cs336_basics.feedforward import SwiGLU
 from cs336_basics.rope import rope
+from cs336_basics.transformer import transformer_block
 
 def run_linear(
     d_in: int,
@@ -314,7 +315,15 @@ def run_transformer_block(
         Float[Tensor, "batch sequence_length d_model"] Tensor with the output of
         running the Transformer block on the input features while using RoPE.
     """
-    raise NotImplementedError
+    return transformer_block(
+        d_model=d_model,
+        num_heads=num_heads,
+        d_ff=d_ff,
+        max_seq_len=max_seq_len,
+        theta=theta,
+        weights=weights,
+        x=in_features,
+    )
 
 
 def run_transformer_lm(
