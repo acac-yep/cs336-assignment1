@@ -21,7 +21,7 @@ from cs336_basics.attention import (
 )
 from cs336_basics.feedforward import SwiGLU
 from cs336_basics.rope import rope
-from cs336_basics.transformer import transformer_block
+from cs336_basics.transformer import transformer_block, transformer_lm
 
 def run_linear(
     d_in: int,
@@ -405,7 +405,17 @@ def run_transformer_lm(
         Float[Tensor, "batch_size sequence_length vocab_size"]: Tensor with the predicted unnormalized
         next-word distribution for each token.
     """
-    raise NotImplementedError
+    return transformer_lm(
+        vocab_size=vocab_size,
+        context_length=context_length,
+        d_model=d_model,
+        num_layers=num_layers,
+        num_heads=num_heads,
+        d_ff=d_ff,
+        rope_theta=rope_theta,
+        weights=weights,
+        input_ids=in_indices,
+    )
 
 
 def run_rmsnorm(
